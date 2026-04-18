@@ -48,3 +48,11 @@ body::before {
   margin: 0 auto;
   padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 }
+
+/* Hide scrollbars globally while keeping scroll functionality */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}

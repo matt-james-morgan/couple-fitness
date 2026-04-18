@@ -2,16 +2,17 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import type { Recipe, Category } from '@/data/recipes'
 
+// Number fields stored as strings to avoid leading-zero issues
 type FormData = {
   emoji: string
   name: string
   category: Category
   prepTime: string
-  baseServings: number
-  kcal: number
-  protein: number
-  carbs: number
-  fat: number
+  baseServings: string
+  kcal: string
+  protein: string
+  carbs: string
+  fat: string
   ingredients: string
   steps: string
   hisNote: string
@@ -23,11 +24,11 @@ const EMPTY: FormData = {
   name: '',
   category: 'lunch',
   prepTime: '',
-  baseServings: 1,
-  kcal: 0,
-  protein: 0,
-  carbs: 0,
-  fat: 0,
+  baseServings: '1',
+  kcal: '',
+  protein: '',
+  carbs: '',
+  fat: '',
   ingredients: '',
   steps: '',
   hisNote: '',
@@ -40,11 +41,11 @@ function toForm(r: Recipe): FormData {
     name: r.name,
     category: r.category,
     prepTime: r.prepTime,
-    baseServings: r.baseServings,
-    kcal: r.macros.kcal,
-    protein: r.macros.protein,
-    carbs: r.macros.carbs,
-    fat: r.macros.fat,
+    baseServings: String(r.baseServings),
+    kcal: String(r.macros.kcal),
+    protein: String(r.macros.protein),
+    carbs: String(r.macros.carbs),
+    fat: String(r.macros.fat),
     ingredients: r.ingredients.join('\n'),
     steps: r.steps.join('\n'),
     hisNote: r.hisNote ?? '',
@@ -79,8 +80,13 @@ export default function RecipeForm({ recipe, onSave, onClose }: Props) {
         category: form.category,
         tags: recipe?.tags ?? ['GF', 'DF', 'Both'],
         prepTime: form.prepTime,
-        baseServings: form.baseServings,
-        macros: { kcal: form.kcal, protein: form.protein, carbs: form.carbs, fat: form.fat },
+        baseServings: parseInt(form.baseServings) || 1,
+        macros: {
+          kcal: parseInt(form.kcal) || 0,
+          protein: parseInt(form.protein) || 0,
+          carbs: parseInt(form.carbs) || 0,
+          fat: parseInt(form.fat) || 0,
+        },
         ingredients: form.ingredients.split('\n').map(s => s.trim()).filter(Boolean),
         steps: form.steps.split('\n').map(s => s.trim()).filter(Boolean),
         hisNote: form.hisNote.trim() || undefined,
@@ -95,41 +101,42 @@ export default function RecipeForm({ recipe, onSave, onClose }: Props) {
     }
   }
 
-  const inputStyle: React.CSSProperties = {
+  const input: React.CSSProperties = {
     width: '100%',
     background: 'var(--card2)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '9px 12px',
-    fontSize: 14,
+    borderRadius: 10,
+    padding: '12px 14px',
+    fontSize: 16,
     color: 'var(--text)',
     fontFamily: 'inherit',
     outline: 'none',
     boxSizing: 'border-box',
+    WebkitAppearance: 'none',
   }
 
-  const labelStyle: React.CSSProperties = {
+  const lbl: React.CSSProperties = {
     display: 'block',
     fontSize: 11,
     fontWeight: 700,
     letterSpacing: '0.08em',
     color: 'var(--muted)',
     textTransform: 'uppercase',
-    marginBottom: 5,
+    marginBottom: 6,
   }
 
   const macroFields: { key: 'kcal' | 'protein' | 'carbs' | 'fat'; label: string }[] = [
-    { key: 'kcal', label: 'Kcal' },
-    { key: 'protein', label: 'Protein' },
-    { key: 'carbs', label: 'Carbs' },
-    { key: 'fat', label: 'Fat' },
+    { key: 'kcal', label: 'Calories' },
+    { key: 'protein', label: 'Protein g' },
+    { key: 'carbs', label: 'Carbs g' },
+    { key: 'fat', label: 'Fat g' },
   ]
 
   return (
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 100,
-        background: 'rgba(0,0,0,0.65)',
+        background: 'rgba(0,0,0,0.7)',
         display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
@@ -137,118 +144,129 @@ export default function RecipeForm({ recipe, onSave, onClose }: Props) {
       <div style={{
         background: 'var(--bg)',
         borderRadius: '20px 20px 0 0',
-        maxHeight: '92dvh',
+        maxHeight: '95dvh',
         display: 'flex',
         flexDirection: 'column',
       }}>
+        {/* Handle bar */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border2)' }} />
+        </div>
+
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 20px 12px',
+          padding: '12px 20px 14px',
           borderBottom: '1px solid var(--border)',
           flexShrink: 0,
         }}>
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 22, letterSpacing: '0.05em' }}>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 24, letterSpacing: '0.05em' }}>
             {recipe ? 'EDIT RECIPE' : 'ADD RECIPE'}
           </div>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 4 }}
+            style={{
+              background: 'var(--card2)', border: 'none', cursor: 'pointer',
+              color: 'var(--muted)', padding: 8, borderRadius: 8, display: 'flex',
+            }}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ overflowY: 'auto', padding: '16px 20px', flex: 1 }}>
+        {/* Scrollable form body */}
+        <form onSubmit={handleSubmit} style={{ overflowY: 'auto', padding: '20px 20px 0', flex: 1 }}>
 
           {/* Emoji + Name */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-            <div style={{ width: 68, flexShrink: 0 }}>
-              <label style={labelStyle}>Emoji</label>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <div style={{ width: 64, flexShrink: 0 }}>
+              <label style={lbl}>Icon</label>
               <input
-                style={{ ...inputStyle, textAlign: 'center', fontSize: 22, padding: '6px 4px' }}
+                style={{ ...input, textAlign: 'center', fontSize: 24, padding: '10px 4px' }}
                 value={form.emoji}
                 onChange={e => set('emoji', e.target.value)}
                 maxLength={2}
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Name *</label>
+              <label style={lbl}>Name *</label>
               <input
-                style={inputStyle}
+                style={input}
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
                 placeholder="Tuna Melt"
+                autoComplete="off"
                 required
               />
             </div>
           </div>
 
-          {/* Category + Prep time */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Category</label>
-              <select
-                style={{ ...inputStyle, cursor: 'pointer' }}
-                value={form.category}
-                onChange={e => set('category', e.target.value as Category)}
-              >
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
-                <option value="snack">Snack</option>
-                <option value="preworkout">Pre-Workout</option>
-              </select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Prep Time</label>
+          {/* Category */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={lbl}>Category</label>
+            <select
+              style={{ ...input, cursor: 'pointer' }}
+              value={form.category}
+              onChange={e => set('category', e.target.value as Category)}
+            >
+              <option value="breakfast">🌅 Breakfast</option>
+              <option value="lunch">☀️ Lunch</option>
+              <option value="dinner">🌙 Dinner</option>
+              <option value="snack">🍎 Snack</option>
+              <option value="preworkout">⚡ Pre-Workout</option>
+            </select>
+          </div>
+
+          {/* Prep time + Servings */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <div style={{ flex: 2 }}>
+              <label style={lbl}>Prep Time</label>
               <input
-                style={inputStyle}
+                style={input}
                 value={form.prepTime}
                 onChange={e => set('prepTime', e.target.value)}
                 placeholder="15 min"
               />
             </div>
+            <div style={{ flex: 1 }}>
+              <label style={lbl}>Servings</label>
+              <input
+                style={{ ...input, textAlign: 'center' }}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={form.baseServings}
+                onChange={e => set('baseServings', e.target.value.replace(/\D/g, ''))}
+                placeholder="1"
+              />
+            </div>
           </div>
 
-          {/* Base Servings */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Base Servings</label>
-            <input
-              style={{ ...inputStyle, width: 80 }}
-              type="number"
-              min={1}
-              value={form.baseServings}
-              onChange={e => set('baseServings', Number(e.target.value))}
-            />
-          </div>
-
-          {/* Macros */}
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8 }}>
-            Macros (per serving)
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
-            {macroFields.map(({ key, label }) => (
-              <div key={key}>
-                <label style={{ ...labelStyle, marginBottom: 4 }}>{label}</label>
-                <input
-                  style={{ ...inputStyle, padding: '9px 4px', textAlign: 'center' }}
-                  type="number"
-                  min={0}
-                  value={form[key]}
-                  onChange={e => set(key, Number(e.target.value))}
-                />
-              </div>
-            ))}
+          {/* Macros — 2×2 grid */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={lbl}>Macros per serving</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {macroFields.map(({ key, label }) => (
+                <div key={key}>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>{label}</div>
+                  <input
+                    style={{ ...input, textAlign: 'center', padding: '12px 8px' }}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={form[key]}
+                    onChange={e => set(key, e.target.value.replace(/\D/g, ''))}
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Ingredients */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Ingredients (one per line)</label>
+          <div style={{ marginBottom: 16 }}>
+            <label style={lbl}>Ingredients — one per line</label>
             <textarea
-              style={{ ...inputStyle, minHeight: 100, resize: 'vertical', lineHeight: 1.6 }}
+              style={{ ...input, minHeight: 110, resize: 'vertical', lineHeight: 1.7 }}
               value={form.ingredients}
               onChange={e => set('ingredients', e.target.value)}
               placeholder={'1 can tuna\n2 slices bread\n14g cheese'}
@@ -256,10 +274,10 @@ export default function RecipeForm({ recipe, onSave, onClose }: Props) {
           </div>
 
           {/* Steps */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Steps (one per line)</label>
+          <div style={{ marginBottom: 16 }}>
+            <label style={lbl}>Steps — one per line <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
             <textarea
-              style={{ ...inputStyle, minHeight: 80, resize: 'vertical', lineHeight: 1.6 }}
+              style={{ ...input, minHeight: 90, resize: 'vertical', lineHeight: 1.7 }}
               value={form.steps}
               onChange={e => set('steps', e.target.value)}
               placeholder={'Mix tuna with mayo\nAssemble on bread\nGrill until cheese melts'}
@@ -267,39 +285,41 @@ export default function RecipeForm({ recipe, onSave, onClose }: Props) {
           </div>
 
           {/* His/Her notes */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>His Note (optional)</label>
-            <input style={inputStyle} value={form.hisNote} onChange={e => set('hisNote', e.target.value)} placeholder="e.g. Add extra cheese" />
+          <div style={{ marginBottom: 16 }}>
+            <label style={lbl}>His Note <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+            <input style={input} value={form.hisNote} onChange={e => set('hisNote', e.target.value)} placeholder="e.g. Add extra cheese" />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>Her Note (optional)</label>
-            <input style={inputStyle} value={form.herNote} onChange={e => set('herNote', e.target.value)} placeholder="e.g. Skip the cheese" />
+            <label style={lbl}>Her Note <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+            <input style={input} value={form.herNote} onChange={e => set('herNote', e.target.value)} placeholder="e.g. Skip the cheese" />
           </div>
 
           {err && (
             <div style={{ color: 'var(--f)', fontSize: 13, marginBottom: 12 }}>{err}</div>
           )}
 
-          <button
-            type="submit"
-            disabled={saving || !form.name.trim()}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: 'var(--m)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 12,
-              fontSize: 15,
-              fontWeight: 700,
-              fontFamily: 'inherit',
-              cursor: saving || !form.name.trim() ? 'not-allowed' : 'pointer',
-              opacity: saving || !form.name.trim() ? 0.6 : 1,
-              marginBottom: 32,
-            }}
-          >
-            {saving ? 'Saving…' : recipe ? 'Save Changes' : 'Add Recipe'}
-          </button>
+          {/* Submit */}
+          <div style={{ position: 'sticky', bottom: 0, background: 'var(--bg)', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', paddingTop: 12 }}>
+            <button
+              type="submit"
+              disabled={saving || !form.name.trim()}
+              style={{
+                width: '100%',
+                padding: '15px',
+                background: 'var(--m)',
+                color: '#000',
+                border: 'none',
+                borderRadius: 12,
+                fontSize: 16,
+                fontWeight: 800,
+                fontFamily: 'inherit',
+                cursor: saving || !form.name.trim() ? 'not-allowed' : 'pointer',
+                opacity: saving || !form.name.trim() ? 0.5 : 1,
+              }}
+            >
+              {saving ? 'Saving…' : recipe ? 'Save Changes' : 'Add Recipe'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
