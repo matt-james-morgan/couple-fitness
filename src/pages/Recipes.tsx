@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { recipes, categoryMeta, type Category } from '@/data/recipes'
+import { Plus } from 'lucide-react'
+import { categoryMeta, type Category, type Recipe } from '@/data/recipes'
+import { useRecipes } from '@/hooks/useRecipes'
 import RecipeCard from '@/components/RecipeCard'
+import RecipeForm from '@/components/RecipeForm'
 import ServingToggle from '@/components/ServingToggle'
 import PersonSwitcher from '@/components/PersonSwitcher'
 
@@ -9,6 +12,9 @@ const categories: Category[] = ['breakfast', 'lunch', 'dinner', 'snack', 'prewor
 export default function Recipes() {
   const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all')
   const [search, setSearch] = useState('')
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const { recipes, loading, error, addRecipe, updateRecipe, deleteRecipe } = useRecipes()
 
   const filtered = recipes.filter(r => {
     const matchCat = activeCategory === 'all' || r.category === activeCategory
@@ -16,11 +22,43 @@ export default function Recipes() {
     return matchCat && matchSearch
   })
 
+  function openAdd() {
+    setEditingRecipe(null)
+    setShowForm(true)
+  }
+
+  function openEdit(recipe: Recipe) {
+    setEditingRecipe(recipe)
+    setShowForm(true)
+  }
+
+  async function handleSave(data: Omit<Recipe, 'id'>) {
+    if (editingRecipe) {
+      await updateRecipe(editingRecipe.id, data)
+    } else {
+      await addRecipe(data)
+    }
+  }
+
   return (
     <div style={{ padding: '24px 16px 16px' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ fontFamily: 'Bebas Neue', fontSize: 26, letterSpacing: '0.05em' }}>RECIPES</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 26, letterSpacing: '0.05em' }}>RECIPES</div>
+          <button
+            onClick={openAdd}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '5px 10px', borderRadius: 20,
+              background: 'var(--m-dim)', border: '1px solid var(--m)',
+              color: 'var(--m)', fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            <Plus size={13} /> Add
+          </button>
+        </div>
         <PersonSwitcher />
       </div>
 
@@ -104,12 +142,31 @@ export default function Recipes() {
 
       {/* Recipe list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '40px 0' }}>Loading recipes…</div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', color: 'var(--f)', padding: '40px 0' }}>Failed to load recipes</div>
+        ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '40px 0' }}>No recipes found</div>
         ) : (
-          filtered.map(recipe => <RecipeCard key={recipe.id} recipe={recipe} />)
+          filtered.map(recipe => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              onEdit={openEdit}
+              onDelete={deleteRecipe}
+            />
+          ))
         )}
       </div>
+
+      {showForm && (
+        <RecipeForm
+          recipe={editingRecipe ?? undefined}
+          onSave={handleSave}
+          onClose={() => setShowForm(false)}
+        />
+      )}
     </div>
   )
 }

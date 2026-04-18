@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock, Pencil, Trash2 } from 'lucide-react'
 import type { Recipe } from '@/data/recipes'
 import { categoryMeta } from '@/data/recipes'
 import { scaleIngredient } from '@/utils/scaling'
@@ -7,9 +7,11 @@ import { useAppStore } from '@/hooks/useAppStore'
 
 interface Props {
   recipe: Recipe
+  onEdit?: (recipe: Recipe) => void
+  onDelete?: (id: string) => void
 }
 
-export default function RecipeCard({ recipe }: Props) {
+export default function RecipeCard({ recipe, onEdit, onDelete }: Props) {
   const [open, setOpen] = useState(false)
   const { person, servings } = useAppStore()
   const multiplier = servings / recipe.baseServings
@@ -152,6 +154,39 @@ export default function RecipeCard({ recipe }: Props) {
                 {recipe.tip.label}:{' '}
               </span>
               <span style={{ color: 'var(--text)' }}>{recipe.tip.text}</span>
+            </div>
+          )}
+
+          {(onEdit || onDelete) && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(recipe)}
+                  style={{
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '8px', borderRadius: 8, border: '1px solid var(--border)',
+                    background: 'transparent', color: 'var(--muted)', fontSize: 13, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  <Pencil size={13} /> Edit
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Delete "${recipe.name}"?`)) onDelete(recipe.id)
+                  }}
+                  style={{
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '8px', borderRadius: 8, border: '1px solid var(--border)',
+                    background: 'transparent', color: 'var(--f)', fontSize: 13, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  <Trash2 size={13} /> Delete
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -16,6 +16,7 @@ export interface Recipe {
   tip?: { label: string; text: string; gender: 'm' | 'f' }
 }
 
+// Static data kept only for reference — app loads recipes from Supabase via useRecipes()
 export const recipes: Recipe[] = [
   // ── BREAKFAST ──────────────────────────────────────────────────────
   {
